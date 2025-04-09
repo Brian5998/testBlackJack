@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <title>🃏 Orange & BlackJack</title>
-  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
   <style>
     body { font-family: sans-serif; padding: 2em; background: #f8f8f8; }
     h1 { color: #d97706; }
@@ -22,121 +21,121 @@
   <h2>Game State</h2>
   <div id="output">No game running.</div>
 
+  <!-- ✅ SCRIPT MOVED TO BOTTOM -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
   <script>
-    window.onload = () => {
-      const CONTRACT_ADDRESS = "0x3f6A7C3b1076EE035C642b771ED631d2c17319DE";
-      const ABI = [
-        {
-          "inputs": [],
-          "stateMutability": "payable",
-          "type": "function",
-          "name": "startGame",
-          "outputs": []
-        },
-        {
-          "inputs": [],
-          "name": "hit",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "stand",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            { "internalType": "address", "name": "player", "type": "address" }
-          ],
-          "name": "getGame",
-          "outputs": [
-            { "internalType": "uint8[]", "name": "playerCards", "type": "uint8[]" },
-            { "internalType": "uint8[]", "name": "dealerCards", "type": "uint8[]" },
-            { "internalType": "uint8", "name": "state", "type": "uint8" }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        }
-      ];
+    const CONTRACT_ADDRESS = "0x3f6A7C3b1076EE035C642b771ED631d2c17319DE";
+    const ABI = [
+      {
+        "inputs": [],
+        "stateMutability": "payable",
+        "type": "function",
+        "name": "startGame",
+        "outputs": []
+      },
+      {
+        "inputs": [],
+        "name": "hit",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "stand",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          { "internalType": "address", "name": "player", "type": "address" }
+        ],
+        "name": "getGame",
+        "outputs": [
+          { "internalType": "uint8[]", "name": "playerCards", "type": "uint8[]" },
+          { "internalType": "uint8[]", "name": "dealerCards", "type": "uint8[]" },
+          { "internalType": "uint8", "name": "state", "type": "uint8" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      }
+    ];
 
-      let provider, signer, contract;
+    let provider, signer, contract;
 
-      window.connectWallet = async function () {
-        console.log("🔌 Connect Wallet button clicked");
+    async function connectWallet() {
+      console.log("🔌 Connect Wallet button clicked");
 
-        if (!window.ethereum) {
-          alert("❌ MetaMask not found. Please install MetaMask.");
-          return;
-        }
+      if (!window.ethereum) {
+        alert("❌ MetaMask not found. Please install MetaMask.");
+        return;
+      }
 
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
-        signer = provider.getSigner();
-        contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
+      contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
-        const address = await signer.getAddress();
-        log("✅ Connected: " + address);
+      const address = await signer.getAddress();
+      log("✅ Connected: " + address);
+      getGame();
+    }
+
+    async function startGame() {
+      try {
+        const tx = await contract.startGame({ value: ethers.utils.parseEther("0.01") });
+        await tx.wait();
+        log("🎲 Game started!");
         getGame();
-      };
-
-      window.startGame = async function () {
-        try {
-          const tx = await contract.startGame({ value: ethers.utils.parseEther("0.01") });
-          await tx.wait();
-          log("🎲 Game started!");
-          getGame();
-        } catch (err) {
-          log("❌ Error starting game: " + err.message);
-        }
-      };
-
-      window.hit = async function () {
-        try {
-          const tx = await contract.hit();
-          await tx.wait();
-          log("🃏 Hit!");
-          getGame();
-        } catch (err) {
-          log("❌ Hit error: " + err.message);
-        }
-      };
-
-      window.stand = async function () {
-        try {
-          const tx = await contract.stand();
-          await tx.wait();
-          log("🛑 Stand!");
-          getGame();
-        } catch (err) {
-          log("❌ Stand error: " + err.message);
-        }
-      };
-
-      async function getGame() {
-        try {
-          const player = await signer.getAddress();
-          const game = await contract.getGame(player);
-
-          let output = "👤 Player Cards: " + game[0].join(", ") + "\\n";
-          output += "💻 Dealer Cards: " + game[1].join(", ") + "\\n";
-
-          const states = ["NONE", "PLAYER_TURN", "DEALER_TURN", "COMPLETE"];
-          output += "🎮 Game State: " + states[game[2]];
-
-          document.getElementById("output").innerText = output;
-        } catch (err) {
-          log("Error reading game state: " + err.message);
-        }
+      } catch (err) {
+        log("❌ Error starting game: " + err.message);
       }
+    }
 
-      function log(msg) {
-        const output = document.getElementById("output");
-        output.innerText += "\\n" + msg;
+    async function hit() {
+      try {
+        const tx = await contract.hit();
+        await tx.wait();
+        log("🃏 Hit!");
+        getGame();
+      } catch (err) {
+        log("❌ Hit error: " + err.message);
       }
-    };
+    }
+
+    async function stand() {
+      try {
+        const tx = await contract.stand();
+        await tx.wait();
+        log("🛑 Stand!");
+        getGame();
+      } catch (err) {
+        log("❌ Stand error: " + err.message);
+      }
+    }
+
+    async function getGame() {
+      try {
+        const player = await signer.getAddress();
+        const game = await contract.getGame(player);
+
+        let output = "👤 Player Cards: " + game[0].join(", ") + "\\n";
+        output += "💻 Dealer Cards: " + game[1].join(", ") + "\\n";
+
+        const states = ["NONE", "PLAYER_TURN", "DEALER_TURN", "COMPLETE"];
+        output += "🎮 Game State: " + states[game[2]];
+
+        document.getElementById("output").innerText = output;
+      } catch (err) {
+        log("Error reading game state: " + err.message);
+      }
+    }
+
+    function log(msg) {
+      const output = document.getElementById("output");
+      output.innerText += "\\n" + msg;
+    }
   </script>
 </body>
 </html>
